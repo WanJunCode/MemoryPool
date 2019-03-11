@@ -591,10 +591,26 @@ void rand_test_2()
     delete ratio;  
     free(pBuf);  
 }  
+
+void wanjunTest(){
+    size_t sBufSize = 500* 1024*1024;  
+    void*pBuf = malloc(sBufSize);  
+    if (pBuf == NULL)  
+    {  
+        cout << "malloc failed" << endl;  
+        return;  
+    }  
+    PMEMORYPOOL mem_pool = CreateMemoryPool(pBuf, sBufSize);
+
+    void *p = GetMemory(500,mem_pool);
+
+    free(pBuf);
+}
+
 int main(int argc, char* argv[])  
 {  
-    rand_test();  
+    // rand_test();  
 //  rand_test_2();  
-      
+    wanjunTest();
     return 0;  
 }  

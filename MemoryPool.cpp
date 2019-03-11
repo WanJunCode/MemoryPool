@@ -128,7 +128,10 @@ void delete_chunk(memory_chunk *&head, memory_chunk *element)
         }
         else
         {
+            // element
+            // head     -   node    -   node    -   node
             head = element->next;
+            // element  -   head    -   node    -   node - node
             head->pre = element->pre;
             head->pre->next = head;
         }
@@ -141,9 +144,12 @@ void delete_chunk(memory_chunk *&head, memory_chunk *element)
     }
     else
     {
+        // element 是双链表中元素
         element->pre->next = element->next;
         element->next->pre = element->pre;
     }
+
+    // 清除 element 和 双链表的关系
     element->pre = NULL;
     element->next = NULL;
 }
@@ -153,6 +159,7 @@ void delete_chunk(memory_chunk *&head, memory_chunk *element)
 void *index2addr(PMEMORYPOOL mem_pool, size_t index)
 {
     char *p = (char *)(mem_pool->memory);
+    // 从 memory 地址开始，偏移 index 个 MINUNITSIZE 长度
     void *ret = (void *)(p + index * MINUNITSIZE);
 
     return ret;
@@ -270,6 +277,7 @@ void *GetMemory(size_t sMemorySize, PMEMORYPOOL pool)
         // chunk 对应的 block 的大小 * 64b 的内存大小符合分配条件
         if (tmp->pfree_mem_addr->count * MINUNITSIZE >= sMemorySize)
         {
+            printf("找到了合适的 chunk\n");
             break;
         }
         tmp = tmp->next;
@@ -283,26 +291,35 @@ void *GetMemory(size_t sMemorySize, PMEMORYPOOL pool)
     // 内存池已经使用的大小 +sMemorySize
     pool->mem_used_size += sMemorySize;
     // tmp 是即将分配内存的 chunk
+    printf("current_index = [%lu]\n",tmp->pfree_mem_addr - pool->pmem_map);
+
+    // 分配的大小 和 chunk 大小相同
     if (tmp->pfree_mem_addr->count * MINUNITSIZE == sMemorySize)
     {
         // 当要分配的内存大小与当前chunk中的内存大小相同时，从pfree_mem_chunk链表中删除此chunk
         size_t current_index = (tmp->pfree_mem_addr - pool->pmem_map);
+        printf("current_index = [%lu]\n",current_index);
+        // 从可用 内存 chunk 双链表中删除 tmp
         delete_chunk(pool->pfree_mem_chunk, tmp);
+        // tmp 关联的 block 设置为 NULL
         tmp->pfree_mem_addr->pmem_chunk = NULL;
 
+        // 将 tmp 放入 pfree_mem_chunk_pool 内存chunk池 头部
         push_front(pool->pfree_mem_chunk_pool, tmp);
         pool->free_mem_chunk_count--;
         pool->mem_map_pool_count++;
-
+        
+        // 将 index 转换成 address 地址并返回
         return index2addr(pool, current_index);
     }
     else
     {
         // 当要分配的内存小于当前chunk中的内存时，更改pfree_mem_chunk中相应chunk的pfree_mem_addr
-
+        printf("当要分配的内存小于当前chunk中的内存时，更改pfree_mem_chunk中相应chunk的pfree_mem_addr\n");
         // 复制当前mem_map_unit
         memory_block copy;
         copy.count = tmp->pfree_mem_addr->count;
+        printf("copy.count = [%lu]\n",copy.count);
         copy.pmem_chunk = tmp;
         // 记录该block的起始和结束索引
         memory_block *current_block = tmp->pfree_mem_addr;
