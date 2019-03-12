@@ -604,6 +604,8 @@ void wanjunTest(){
 
     void *p = GetMemory(500,mem_pool);
 
+    FreeMemory(p,mem_pool);
+
     free(pBuf);
 }
 
