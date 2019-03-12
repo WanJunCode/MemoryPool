@@ -10,8 +10,8 @@ struct memory_chunk;
 // sizeof = 24
 typedef struct memory_block  
 {  
-    size_t count;  
-    size_t start;  
+    size_t count;                   // 表示剩余有多少 block 属于 chunk
+    size_t start;                   // block 从 start 开始就属于 chunk
     memory_chunk* pmem_chunk;       // 记录所绑定的 chunk  
 }memory_block;
 

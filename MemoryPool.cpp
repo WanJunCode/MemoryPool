@@ -320,21 +320,27 @@ void *GetMemory(size_t sMemorySize, PMEMORYPOOL pool)
         memory_block copy;
         copy.count = tmp->pfree_mem_addr->count;
         printf("copy.count = [%lu]\n",copy.count);
+        // block 属于 chunk
         copy.pmem_chunk = tmp;
         // 记录该block的起始和结束索引
         memory_block *current_block = tmp->pfree_mem_addr;
         current_block->count = sMemorySize / MINUNITSIZE;
+        printf("current_block->count = [%lu]\n",current_block->count);
         size_t current_index = (current_block - pool->pmem_map);
+        // block end 设置 start 为 current_index
         pool->pmem_map[current_index + current_block->count - 1].start = current_index;
         current_block->pmem_chunk = NULL; // NULL表示当前内存块已被分配
-        // 当前block被一分为二，更新第二个block中的内容
-        pool->pmem_map[current_index + current_block->count].count = copy.count - current_block->count;
-        pool->pmem_map[current_index + current_block->count].pmem_chunk = copy.pmem_chunk;
+        // ---current_block--------------count || modify_block-------------------------end_index
+        size_t modify_block = current_index + current_block->count;
+        pool->pmem_map[modify_block].count = copy.count - current_block->count;
+        printf("pool->pmem_map[%lu].count = [%lu]\n",modify_block,pool->pmem_map[modify_block].count);
+        pool->pmem_map[modify_block].pmem_chunk = copy.pmem_chunk;
         // 更新原来的pfree_mem_addr
-        tmp->pfree_mem_addr = &(pool->pmem_map[current_index + current_block->count]);
+        tmp->pfree_mem_addr = &(pool->pmem_map[modify_block]);
 
         size_t end_index = current_index + copy.count - 1;
-        pool->pmem_map[end_index].start = current_index + current_block->count;
+        printf("end index = [%lu]\n",end_index);
+        pool->pmem_map[end_index].start = modify_block;
         return index2addr(pool, current_index);
     }
 }
