@@ -429,21 +429,35 @@ void FreeMemory(void *ptrMemoryBlock, PMEMORYPOOL pool)
     }
     else
     {
+        // 需要释放的 内存块在 内存映射表的中间位置
+        // -----index-------------pre_block || current_block----------------end_block || next_block---------------------
         next_block = &(pool->pmem_map[current_index + current_block->count]);
         pre_block = &(pool->pmem_map[current_index - 1]);
         size_t index = pre_block->start;
+        // -----pre_block------------------ || current_block----------------end_block || next_block---------------------        
         pre_block = &(pool->pmem_map[index]);
         bool is_back_merge = false;
+
+        // 四种情况，全部被覆盖使用
+        // 1. 前后都被使用
+        // 2. 前未被使用
+        // 3. 后未被使用
+        // 4. 前后都未被使用
+
+        // chunk is null 表示已经被使用
         if (next_block->pmem_chunk == NULL && pre_block->pmem_chunk == NULL)
         {
+            // 新建一个 chunk 用于记录当前需要被释放的 内存块
             memory_chunk *new_chunk = front_pop(pool->pfree_mem_chunk_pool);
+            // chunk - block 互相关联
             new_chunk->pfree_mem_addr = current_block;
             current_block->pmem_chunk = new_chunk;
+            // new_chunk 存入 memory chunk set 中，表示可用的一个 chunk
             push_back(pool->pfree_mem_chunk, new_chunk);
             pool->mem_map_pool_count--;
             pool->free_mem_chunk_count++;
         }
-        // 后一个内存块
+        // 后一个内存块 没有被使用
         if (next_block->pmem_chunk != NULL)
         {
             next_block->pmem_chunk->pfree_mem_addr = current_block;
@@ -451,6 +465,7 @@ void FreeMemory(void *ptrMemoryBlock, PMEMORYPOOL pool)
             current_block->count += next_block->count;
             current_block->pmem_chunk = next_block->pmem_chunk;
             next_block->pmem_chunk = NULL;
+            // 标示向后 融合
             is_back_merge = true;
         }
         // 前一个内存块
@@ -460,6 +475,8 @@ void FreeMemory(void *ptrMemoryBlock, PMEMORYPOOL pool)
             pre_block->count += current_block->count;
             if (is_back_merge)
             {
+                // pfree_mem_chunk -> current_chunk -> pfree_mem_chunk_pool
+                // 前后同时融合的话，需要删除一个多余的 chunk，即删除next_chunk
                 delete_chunk(pool->pfree_mem_chunk, current_block->pmem_chunk);
                 push_front(pool->pfree_mem_chunk_pool, current_block->pmem_chunk);
                 pool->free_mem_chunk_count--;

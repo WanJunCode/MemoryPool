@@ -32,7 +32,7 @@ typedef struct MEMORYPOOL
     void *memory;                               // 第四部分 ：实际可使用内存地址  
     size_t size;                                // 可分配内存大小
     memory_block* pmem_map;                     // 第二部分 ：内存映射表
-    memory_chunk* pfree_mem_chunk;              // 第三部分 ：内存块 双链表
+    memory_chunk* pfree_mem_chunk;              // 第三部分 ：内存块 双链表 memory chunk set
     memory_chunk* pfree_mem_chunk_pool;         // 第三部分 ：可用内存块池 双链表
     size_t mem_used_size;                       // 记录内存池中已经分配给用户的内存的大小
     size_t mem_map_pool_count;                  // 记录内存映射表（链表单元缓冲池）中剩余的单元的个数，个数为0时不能分配单元给pfree_mem_chunk
