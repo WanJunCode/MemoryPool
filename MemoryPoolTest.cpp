@@ -594,7 +594,7 @@ void rand_test_2()
 
 void wanjunTest(){
     size_t sBufSize = 500* 1024*1024;  
-    void*pBuf = malloc(sBufSize);  
+    void *pBuf = malloc(sBufSize);
     if (pBuf == NULL)  
     {  
         cout << "malloc failed" << endl;  
